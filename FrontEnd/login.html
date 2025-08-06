@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sign In</title>
+  <style>
+    body {
+      background-color: #0f172a;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .login-container {
+      background-color: #1e293b;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      width: 300px;
+      text-align: center;
+    }
+
+    .login-container h2 {
+      margin-bottom: 20px;
+      font-size: 28px;
+    }
+
+    .login-container input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: none;
+      border-radius: 8px;
+      background-color: #334155;
+      color: white;
+      font-size: 16px;
+    }
+
+    .login-container button,
+    .login-container a.button-link {
+      width: 100%;
+      padding: 12px;
+      background-color: #22c55e;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 10px;
+      transition: background-color 0.2s;
+    }
+
+    .login-container button:hover,
+    .login-container a.button-link:hover {
+      background-color: #16a34a;
+    }
+
+    .flash-message {
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .flash-message.success {
+      background-color: #16a34a;
+      color: white;
+    }
+
+    .flash-message.error {
+      background-color: #dc2626;
+      color: white;
+    }
+  </style>
+
+  <script>
+    setTimeout(function () {
+      const flash = document.querySelector('.flash-message');
+      if (flash) {
+        flash.style.display = 'none';
+      }
+    }, 3000);
+  </script>
+</head>
+<body>
+
+  <div class="login-container">
+    <h2>Sign In</h2>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="flash-message {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="/login">
+      <input type="text" name="username" placeholder="Username" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <button type="submit">Sign In</button>
+    </form>
+
+    <!-- Register Button -->
+    <a href="/register" class="button-link">Register</a>
+  </div>
+
+</body>
+</html>

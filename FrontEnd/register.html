@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register - Cybersecurity Game</title>
+  <style>
+    body {
+      background-color: #0f172a;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .register-container {
+      background-color: #1e293b;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      width: 300px;
+      text-align: center;
+    }
+
+    .register-container h2 {
+      margin-bottom: 20px;
+      font-size: 28px;
+    }
+
+    .register-container input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: none;
+      border-radius: 8px;
+      background-color: #334155;
+      color: white;
+      font-size: 16px;
+    }
+
+    .register-container button,
+    .register-container a.button-link {
+      width: 100%;
+      padding: 12px;
+      background-color: #22c55e;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 10px;
+      transition: background-color 0.2s;
+    }
+
+    .register-container button:hover,
+    .register-container a.button-link:hover {
+      background-color: #16a34a;
+    }
+
+    .flash-message {
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .flash-message.success {
+      background-color: #16a34a;
+      color: white;
+    }
+
+    .flash-message.error {
+      background-color: #dc2626;
+      color: white;
+    }
+  </style>
+
+  <script>
+    // Auto-hide flash message after 3 seconds
+    setTimeout(function () {
+      const flash = document.querySelector('.flash-message');
+      if (flash) {
+        flash.style.display = 'none';
+      }
+    }, 3000);
+  </script>
+</head>
+<body>
+
+  <div class="register-container">
+    <h2>Register</h2>
+
+    <!-- Flash message display block -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-message {{ category }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="/register">
+      <input type="text" name="username" placeholder="Username" required>
+      <input type="password" name="password" placeholder="Password" required>
+      <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+      <button type="submit">Register</button>
+    </form>
+
+    <!-- Link to login page -->
+    <a href="/login" class="button-link">Already have an account? Login</a>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- … your head … -->
+</head>
+<body>
+  <div class="game-container">
+    <h1>Welcome, {{ username }}!</h1>
+    <div class="status-box">
+      <h2>Caldera Attack Status</h2>
+      <div id="attack-status">Loading...</div>
+    </div>
+  </div>
+
+  <script>
+    // operationId was passed into the template already
+    const operationId = "{{ operation_id }}";
+
+    async function fetchStatus() {
+      try {
+        const response = await fetch(`/attack-status/${operationId}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const status = await response.json();
+        document.getElementById("attack-status").innerHTML = `
+          <p><strong>Operation ID:</strong> ${status.id}</p>
+          <p><strong>Name:</strong> ${status.name}</p>
+          <p><strong>State:</strong> ${status.state}</p>
+          <p><strong>Start Time:</strong> ${status.start}</p>
+          <p><strong>Host Count:</strong> ${status.host_group.length}</p>
+        `;
+      } catch (err) {
+        console.error("fetchStatus error:", err);
+        document.getElementById("attack-status").innerHTML =
+          "<p style='color:red;'>Error fetching attack status.</p>";
+      }
+    }
+
+    // initial load + refresh every 10s
+    fetchStatus();
+    setInterval(fetchStatus, 10000);
+  </script>
+</body>
+</html>
