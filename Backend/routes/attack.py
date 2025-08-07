@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session 
 from agents.attack_agent import AttackAgent
 from config import Config
 
@@ -9,7 +9,7 @@ agent = AttackAgent(Config.CALDERA_URL, Config.API_KEY)
 
 @attack_bp.route("/start-attack", methods=["POST"])
 def start_attack():
-    data = request.get_json() or {}
+    data = request.get_json()
     adversary_id = data.get("adversary_id")
     username = session.get("username", "unknown")
 
@@ -47,19 +47,13 @@ def start_attack():
     else:
         return jsonify({"error": "Failed to start attack"}), 500
 
-@attack_bp.route("/attack-status", methods=["GET"])
-def attack_status():
-    print("[DEBUG] /attack-status hit")
-    operation_id = session.get("operation_id")
-    print(f"[DEBUG] Retrieved operation_id: {operation_id}")
-    if not operation_id:
-        return jsonify({"error": "No active operation found"}), 400
-    
+@attack_bp.route("/attack/status/<operation_id>", methods=["GET"])
+def attack_status_by_id(operation_id):  # ✅ match the route and param
+    print("[DEBUG] /attack/status hit")
+    print(f"[DEBUG] Received operation_id: {operation_id}")
 
-@attack_bp.route("/attack-status/<operation_id>")
-def attack_status_by_id(operation_id):
     status = agent.get_operation_status(operation_id)
+    print("[DEBUG] Caldera status response:", status)
+
     return jsonify(status or {"error": "not found"}), (200 if status else 404)
-
-
 

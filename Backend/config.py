@@ -1,13 +1,13 @@
 class Config:
-    SQLALCHEMY_DATABASE_URI = "sqlite:///test.db"                  # ✔ Good for local testing
-    SQLALCHEMY_TRACK_MODIFICATIONS = False                         # ✔ Correctly disabled
+    SQLALCHEMY_DATABASE_URI = "sqlite:///test.db"                  
+    SQLALCHEMY_TRACK_MODIFICATIONS = False                         
 
-    SECRET_KEY = "super-secret-key"                                # ⚠️ Use a secure random value in production
+    SECRET_KEY = "super-secret-key"                              
 
-    CALDERA_URL = "http://localhost:8888"                          # ✔ Assumes Caldera is running locally
-    API_KEY = 'ADMIN123'                                           # ✔ Not needed in --insecure mode
+    CALDERA_URL = "http://localhost:8888"                         
+    API_KEY = 'ADMIN123'                                           
 
-    BACKEND_URL = "http://localhost:5000/"                          # ✔ Matches Flask's default dev port
+    BACKEND_URL = "http://localhost:5000/"                          
 
 
 # This is a temporary database with sql , later will be changed to postgresql when connected to the server 
