@@ -115,5 +115,5 @@ def game_page():
     return render_template(
         "game.html",
         username=session.get("username"),
-        operation_id=session.get("operation_id")  # ✅ this is critical
+        operation_id=session.get("operation_id")  
     )

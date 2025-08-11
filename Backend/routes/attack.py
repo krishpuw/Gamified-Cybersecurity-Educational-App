@@ -47,8 +47,8 @@ def start_attack():
     else:
         return jsonify({"error": "Failed to start attack"}), 500
 
-@attack_bp.route("/attack/status/<operation_id>", methods=["GET"])
-def attack_status_by_id(operation_id):  # ✅ match the route and param
+@attack_bp.route("/status/<operation_id>", methods=["GET"])
+def attack_status_by_id(operation_id):  
     print("[DEBUG] /attack/status hit")
     print(f"[DEBUG] Received operation_id: {operation_id}")
 

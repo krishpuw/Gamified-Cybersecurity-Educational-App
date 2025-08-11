@@ -1,49 +1,269 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Cyber Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Tailwind CDN (swap to compiled CSS in prod) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Lightweight “hacking” animations */
+    @keyframes flicker{0%,19%,21%,23%,25%,54%,56%,100%{opacity:1}20%,24%,55%{opacity:.4}22%{opacity:.7}}
+    @keyframes glitch{0%{transform:translate(0)}20%{transform:translate(-1px,1px)}40%{transform:translate(-2px,-1px)}60%{transform:translate(1px,2px)}80%{transform:translate(2px,-2px)}100%{transform:translate(0)}}
+    @keyframes scan{0%{transform:translateY(-100%);opacity:.05}100%{transform:translateY(100%);opacity:.05}}
+    @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 rgba(34,197,94,0)}50%{box-shadow:0 0 24px rgba(34,197,94,.6)}}
+    .animate-flicker{animation:flicker 2.2s infinite steps(1,end)}
+    .animate-glitch{animation:glitch 1.2s infinite}
+    .animate-scan::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.06) 2px 4px);animation:scan 3.5s linear infinite;pointer-events:none}
+    .animate-pulseGlow{animation:pulseGlow 1.6s ease-in-out infinite}
+  </style>
 </head>
-<body>
-  <div class="game-container">
-    <h1>Welcome, {{ username }}!</h1>
-    <div class="status-box">
-      <h2>Caldera Attack Status</h2>
-      <p>Operation ID (raw): {{ operation_id }}</p>
-      <div id="attack-status">Loading...</div>
+<body class="bg-gray-950 text-white min-h-screen">
+  <div class="max-w-7xl mx-auto p-4 lg:p-8 relative">
+    <!-- Header -->
+    <header class="mb-6 text-center">
+      <h1 class="text-3xl lg:text-5xl font-extrabold text-red-500 animate-glitch">
+        ⚠️ SYSTEM UNDER ATTACK
+      </h1>
+      <p class="text-gray-300 mt-2">Detect and respond to the adversary attack.</p>
+      <div class="mt-2 text-sm text-gray-400">
+        Agent: <span class="text-green-400 font-semibold">{{ username }}</span> ·
+        Operation ID: <span class="text-blue-300 font-mono">{{ operation_id }}</span>
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left: Adversary + Terminal -->
+      <section class="space-y-4">
+        <!-- Adversary/Op card -->
+        <div id="adversary-card" class="bg-red-900/40 border border-red-700/60 rounded-xl p-4 shadow-lg">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xl font-bold">Adversary: <span id="adv-name">—</span></h3>
+            <span id="auto-badge" class="text-xs bg-red-700 px-2 py-1 rounded animate-flicker">Autonomous Attack Detected</span>
+          </div>
+          <p class="mt-1">Planner: <span id="adv-planner" class="text-blue-300">—</span></p>
+          <p class="mt-1">Status: <span id="adv-status" class="text-yellow-300">Loading…</span></p>
+          <p class="mt-1 text-sm text-gray-400">Op ID: <span id="op-id" class="font-mono">{{ operation_id }}</span></p>
+        </div>
+
+        <!-- Terminal feed -->
+        <div class="relative bg-black rounded-xl p-4 h-64 overflow-y-auto font-mono text-green-400 text-sm animate-scan" id="terminal"></div>
+
+        <!-- Access overlay -->
+        <div class="grid grid-cols-3 gap-2 text-center font-mono text-xs">
+          <div class="bg-red-800/70 p-2 rounded animate-flicker">ACCESS DENIED</div>
+          <div class="bg-red-800/70 p-2 rounded animate-flicker">ACCESS DENIED</div>
+          <div class="bg-green-800/70 p-2 rounded">ACCESS GRANTED</div>
+        </div>
+      </section>
+
+      <!-- Middle: Gauges + Countdown + Start -->
+      <section class="space-y-4">
+        <!-- Security meter -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
+          <h4 class="font-semibold mb-2">Security Status</h4>
+          <div class="flex items-center gap-4">
+            <div class="relative w-28 h-28 rounded-full border-4 border-green-500/70 grid place-items-center">
+              <span id="detection-pct" class="text-2xl font-bold">—%</span>
+            </div>
+            <div class="flex-1">
+              <p>Compromise Risk: <span id="risk" class="font-semibold text-red-400">—</span></p>
+              <div class="mt-2 w-full h-2 bg-gray-800 rounded">
+                <div id="risk-bar" class="h-2 bg-red-500 rounded" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Countdown + Start -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4 text-center">
+          <p class="text-yellow-300 text-xl font-bold mb-3">Engagement begins in <span id="countdown">5</span>…</p>
+          <button id="start-btn" class="bg-green-600 hover:bg-green-700 transition px-6 py-3 rounded-full font-bold animate-pulseGlow disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+            🚀 Start Investigation
+          </button>
+          <p class="text-xs text-gray-400 mt-2">This will transition to the Q/A phase.</p>
+        </div>
+      </section>
+
+      <!-- Right: Agent stats + Leaderboard + Badges -->
+      <aside class="space-y-4">
+        <!-- Agent stats / XP -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
+          <h4 class="font-semibold mb-2">Agent Profile</h4>
+          <p>Agent: <span id="agent-name">{{ username }}</span></p>
+          <p>Level: <span id="agent-level" class="text-yellow-300 font-semibold">Cyber Sentinel</span></p>
+          <div class="mt-3">
+            <label class="text-sm text-gray-300">XP Progress</label>
+            <div class="w-full bg-gray-800 rounded-full h-3 mt-1">
+              <div id="xp-bar" class="bg-green-500 h-3 rounded-full" style="width: 0%"></div>
+            </div>
+            <p class="text-sm mt-1">XP: <span id="xp">0</span> / <span id="xp-max">1000</span></p>
+            <p class="text-sm">Score: <span id="score" class="font-bold">0</span></p>
+          </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
+          <h4 class="font-semibold mb-2">Leaderboard (Top 5)</h4>
+          <table class="w-full text-sm">
+            <thead class="text-gray-400">
+              <tr><th class="text-left">Rank</th><th class="text-left">Agent</th><th class="text-right">Score</th></tr>
+            </thead>
+            <tbody id="lb-body">
+              <!-- Filled via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Badges -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
+          <h4 class="font-semibold mb-2">Badges</h4>
+          <div id="badges" class="flex flex-wrap gap-2">
+            <!-- Filled via JS -->
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
+
   <script>
-  const operationId = "{{ operation_id }}";
-  console.log("Injected operationId:", operationId);
+    // Injected vars
+    const operationId = "{{ operation_id }}";
+    const agentName = "{{ username }}";
+    console.log("Injected operationId:", operationId);
 
-  async function fetchStatus() {
-    try {
-      const response = await fetch(`/attack/status/${operationId}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    // UI handles
+    const $ = (id) => document.getElementById(id);
+    const termEl = $("terminal");
+    const statusEl = $("adv-status");
+    const nameEl = $("adv-name");
+    const plannerEl = $("adv-planner");
+    const opIdEl = $("op-id");
+    const detectionPctEl = $("detection-pct");
+    const riskEl = $("risk");
+    const riskBarEl = $("risk-bar");
+    const countdownEl = $("countdown");
+    const startBtn = $("start-btn");
 
-      const status = await response.json();
-      console.log("Fetched status:", status);
+    // Mock leaderboards/badges/XP for now (replace with your AI agent updates)
+    const lbBody = $("lb-body");
+    const badgesEl = $("badges");
+    const xpEl = $("xp");
+    const xpMaxEl = $("xp-max");
+    const xpBarEl = $("xp-bar");
+    const scoreEl = $("score");
 
-      document.getElementById("attack-status").innerHTML = `
-        <p><strong>Operation ID:</strong> ${status.id || "N/A"}</p>
-        <p><strong>Name:</strong> ${status.name || "N/A"}</p>
-        <p><strong>State:</strong> ${status.state || "N/A"}</p>
-        <p><strong>Start Time:</strong> ${status.start || "N/A"}</p>
-        <p><strong>Host Count:</strong> ${status.host_group ? status.host_group.length : "N/A"}</p>
-      `;
-    } catch (err) {
-      console.error("fetchStatus error:", err);
-      document.getElementById("attack-status").innerHTML =
-        "<p style='color:red;'>Error fetching attack status.</p>";
+    // Terminal helper
+    function appendLog(line) {
+      const row = document.createElement("div");
+      row.textContent = line;
+      termEl.appendChild(row);
+      termEl.scrollTo({ top: termEl.scrollHeight });
     }
-  }
 
-  fetchStatus();
-  setInterval(fetchStatus, 10000);
-</script>
+    // Very simple “risk” mapper
+    function riskFromPct(p) {
+      if (p >= 70) return { label: "High", bar: 85, color: "bg-red-500", text: "text-red-400" };
+      if (p >= 40) return { label: "Medium", bar: 55, color: "bg-yellow-500", text: "text-yellow-300" };
+      return { label: "Low", bar: 25, color: "bg-green-500", text: "text-green-400" };
+    }
 
+    async function fetchStatus() {
+      try {
+        const response = await fetch(`/attack/status/${operationId}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const s = await response.json();
+        console.log("Fetched status:", s);
+
+        // Fill adversary/meta (best-effort; adapt to your actual payload)
+        nameEl.textContent = s.name || "Unknown Adversary";
+        plannerEl.textContent = (s.planner || "atomic");
+        statusEl.textContent = s.state || "Unknown";
+
+        // Fake detection % based on state for now (adjust when you have real signals)
+        const pct = s.state === "running" ? 65 : s.state === "finished" ? 100 : 20;
+        detectionPctEl.textContent = `${pct}%`;
+        const r = riskFromPct(pct);
+        riskEl.textContent = r.label;
+        riskEl.className = `font-semibold ${r.text}`;
+        riskBarEl.style.width = `${r.bar}%`;
+        riskBarEl.className = `h-2 rounded ${r.color}`;
+
+        // Terminal flavor
+        appendLog(`[${new Date().toLocaleTimeString()}] Operation ${s.id || "N/A"} state: ${s.state || "?"}`);
+        if (s.host_group?.length) appendLog(`>> Hosts in scope: ${s.host_group.length}`);
+        if (s.chain?.length) appendLog(`>> Abilities executed: ${s.chain.length}`);
+
+        // Auto-start countdown only once when we first see "running"
+        if (!window.__countdownStarted && (s.state || "").toLowerCase().includes("run")) {
+          window.__countdownStarted = true;
+          startCountdown(5);
+        }
+      } catch (err) {
+        console.error("fetchStatus error:", err);
+        appendLog(`[${new Date().toLocaleTimeString()}] ⚠ Error fetching status`);
+        statusEl.textContent = "Error";
+      }
+    }
+
+    // Countdown → enable Start button
+    function startCountdown(n) {
+      countdownEl.textContent = n;
+      const t = setInterval(() => {
+        n -= 1;
+        countdownEl.textContent = n;
+        if (n <= 0) {
+          clearInterval(t);
+          startBtn.disabled = false;
+          startBtn.classList.add("animate-pulseGlow");
+          appendLog(`[${new Date().toLocaleTimeString()}] ✅ Ready to engage.`);
+        }
+      }, 1000);
+    }
+
+    // Start Investigation → move to questions (adjust route as needed)
+    startBtn.addEventListener("click", () => {
+      // Optional: notify backend or AI agent here before redirect
+      window.location.href = "/question"; // change to your actual route
+    });
+
+    // Mock sidebar data (replace with real AI agent updates later)
+    function seedRightSidebar() {
+      // Leaderboard
+      const rows = [
+        { r: 1, u: "cyborg_mk4", s: 2890 },
+        { r: 2, u: agentName, s: 1550 },
+        { r: 3, u: "ghost_shell", s: 1480 },
+        { r: 4, u: "zero_day", s: 1320 },
+        { r: 5, u: "root@neo", s: 1275 },
+      ];
+      lbBody.innerHTML = rows.map(x =>
+        `<tr class="border-b border-gray-800/60">
+           <td class="py-1">#${x.r}</td>
+           <td class="py-1">${x.u}</td>
+           <td class="py-1 text-right">${x.s}</td>
+         </tr>`).join("");
+
+      // Badges
+      const badgeList = ["🛡️ Sentinel", "⚡ Speed Runner", "🔍 Forensic Eye"];
+      badgesEl.innerHTML = badgeList.map(b =>
+        `<span class="inline-flex items-center gap-1 text-xs bg-gray-800 border border-gray-700 px-2 py-1 rounded">${b}</span>`
+      ).join("");
+
+      // XP/Score
+      const xp = 650, max = 1000, score = 1200;
+      xpEl.textContent = xp; xpMaxEl.textContent = max;
+      xpBarEl.style.width = `${(xp / max) * 100}%`;
+      scoreEl.textContent = score;
+    }
+
+    // Init
+    seedRightSidebar();
+    fetchStatus();
+    setInterval(fetchStatus, 10000);
+  </script>
+
+  <!-- Debug echo (optional) -->
+  <p class="text-xs text-gray-500 text-center mt-6">Operation ID: {{ operation_id }}</p>
 </body>
-<p>Operation ID from Jinja: {{ operation_id }}</p>
-
 </html>
