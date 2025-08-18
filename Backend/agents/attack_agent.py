@@ -12,10 +12,11 @@ class AttackAgent:
     def start_attack(self, adversary_id: str, group: str = "red", autonomous: bool = True, username: str = None):
         operation_name = f"Attack_for_{username}" if username else "Generic_Attack"
         payload = {
-            "name": operation_name,
+            "name": operation_name, # integrate type of attack right here 
             "adversary_id": adversary_id,
             "group": group,
              "autonomous": 1 if autonomous else 0
+             
         }
 
         response = requests.post(f"{self.base_url}/api/v2/operations", headers=self.headers, json=payload)

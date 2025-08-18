@@ -1,13 +1,51 @@
+# import os
+# from pathlib import Path
+# from dotenv import load_dotenv
+
+# env_path = Path(__file__).resolve().parent / ".env"
+# load_dotenv(dotenv_path=env_path)
+
+
+# class Config:
+#     SQLALCHEMY_DATABASE_URI = "sqlite:///test.db"                  
+#     SQLALCHEMY_TRACK_MODIFICATIONS = False                         
+
+#     SECRET_KEY = "super-secret-key"                              
+
+#     CALDERA_URL = "http://localhost:8888"                         
+#     API_KEY = 'ADMIN123'                                           
+
+#     BACKEND_URL = "http://localhost:5000/"   
+
+#     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+#     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+
+
+
+# config.py
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env sitting next to app.py/config.py in Backend/
+env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(env_path)
+
 class Config:
-    SQLALCHEMY_DATABASE_URI = "sqlite:///test.db"                  
-    SQLALCHEMY_TRACK_MODIFICATIONS = False                         
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///test.db")
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    SECRET_KEY = "super-secret-key"                              
+    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
 
-    CALDERA_URL = "http://localhost:8888"                         
-    API_KEY = 'ADMIN123'                                           
+    CALDERA_URL = os.getenv("CALDERA_URL", "http://localhost:8888")
+    API_KEY = os.getenv("CALDERA_API_KEY", "ADMIN123")
 
-    BACKEND_URL = "http://localhost:5000/"                          
+    BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000/")
+
+    # LLM keys
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+
 
 
 # This is a temporary database with sql , later will be changed to postgresql when connected to the server 
