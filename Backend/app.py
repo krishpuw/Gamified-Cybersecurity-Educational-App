@@ -9,7 +9,7 @@ from routes.attack import attack_bp
 from routes.questions import questions_bp
 from agents.engagement import engagement_bp
 
-template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Frontend')) # to get the Landing page from frontend dir
+template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'FrontEnd')) # to get the Landing page from frontend dir
 def create_app():
     app = Flask(__name__, template_folder=template_path) #grabbing 
     app.config.from_object(Config)

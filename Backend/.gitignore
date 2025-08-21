@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual envs
+.venv/
+env/
+env*/
+env311/
+.env
+
+
+# Node
+node_modules/
+dist/
+build/
+
+# Docker
+*.log
+.dockerignore
+
+# OS / misc
+.DS_Store
+.env
+.env.*
