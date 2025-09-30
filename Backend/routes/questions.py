@@ -93,4 +93,11 @@ def questions_page():
     return render_template("questions.html")
 
 
+ui_bp = Blueprint("ui_bp", __name__)
+
+# @ui_bp.route("/summary")
+# def summary_page():
+#     # We'll render the template which will read query params on the client
+#     return render_template("summary.html")
+
 

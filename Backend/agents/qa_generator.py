@@ -131,17 +131,6 @@ def generate_question(
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 # # qa_generator.py
 # from langchain_openai import ChatOpenAI
 # from langchain_core.prompts import ChatPromptTemplate
