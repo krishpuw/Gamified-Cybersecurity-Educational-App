@@ -104,6 +104,7 @@ python server.py --insecure --build
 
 # CURRENT STATUS 
 AI Question Generation
-
 🛠️ Fix in progress — Q/A generation may not work until API update is complete
+
+Deployment on Servers - Work in progress 
 
