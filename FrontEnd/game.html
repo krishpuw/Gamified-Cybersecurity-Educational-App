@@ -6,81 +6,162 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @keyframes flicker{0%,19%,21%,23%,25%,54%,56%,100%{opacity:1}20%,24%,55%{opacity:.4}22%{opacity:.7}}
-    @keyframes glitch{0%{transform:translate(0)}20%{transform:translate(-1px,1px)}40%{transform:translate(-2px,-1px)}60%{transform:translate(1px,2px)}80%{transform:translate(2px,-2px)}100%{transform:translate(0)}}
-    @keyframes scan{0%{transform:translateY(-100%);opacity:.05}100%{transform:translateY(100%);opacity:.05}}
-    @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 rgba(34,197,94,0)}50%{box-shadow:0 0 24px rgba(34,197,94,.6)}}
-    .animate-flicker{animation:flicker 2.2s infinite steps(1,end)}
-    .animate-glitch{animation:glitch 1.2s infinite}
-    .animate-scan::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.06) 2px 4px);animation:scan 3.5s linear infinite;pointer-events:none}
-    .animate-pulseGlow{animation:pulseGlow 1.6s ease-in-out infinite}
+    /* Shared animations/theme from login/landing */
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.3), 0 0 40px rgba(34, 197, 94, 0.1); }
+      50% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.5), 0 0 60px rgba(34, 197, 94, 0.2); }
+    }
+    @keyframes scanLine {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100vh); }
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .glow-pulse { animation: glowPulse 2s infinite; }
+    .scan-line { animation: scanLine 4s linear infinite; }
+    .blink { animation: blink 1s infinite; }
+    .slide-in { animation: slideIn 0.5s ease-out; }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+    .terminal-text { font-family: 'Courier New', monospace; }
+
+    /* Extra effects from your previous game page */
+    @keyframes flicker { 0%,19%,21%,23%,25%,54%,56%,100%{opacity:1} 20%,24%,55%{opacity:.4} 22%{opacity:.7} }
+    @keyframes scanBg { 0%{transform:translateY(-100%);opacity:.05} 100%{transform:translateY(100%);opacity:.05} }
+    @keyframes float {
+      0%,100% { transform: translateY(0px) translateX(0px); }
+      25% { transform: translateY(-20px) translateX(10px); }
+      50% { transform: translateY(-10px) translateX(-10px); }
+      75% { transform: translateY(-30px) translateX(5px); }
+    }
+    .animate-flicker { animation: flicker 2.2s infinite steps(1,end); }
+    .animate-scan-bg::after {
+      content:""; position:absolute; inset:0;
+      background:repeating-linear-gradient(transparent 0 2px, rgba(0,0,0,.06) 2px 4px);
+      animation: scanBg 3.5s linear infinite; pointer-events:none;
+    }
+    .animate-pulseGlow { animation: glowPulse 1.6s ease-in-out infinite; }
+
+    /* Reduce motion for accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+      .scan-line, .animate-scan-bg::after { display: none !important; }
+    }
   </style>
 </head>
-<body class="bg-gray-950 text-white min-h-screen">
-  <div class="max-w-7xl mx-auto p-4 lg:p-8 relative">
-    <header class="mb-6 text-center">
-      <h1 class="text-3xl lg:text-5xl font-extrabold text-red-500 animate-glitch">⚠️ SYSTEM UNDER ATTACK</h1>
-      <p class="text-gray-300 mt-2">Detect and respond to the adversary attack.</p>
-      <div class="mt-2 text-sm text-gray-400">
+<body class="bg-slate-950 text-white min-h-screen overflow-x-hidden">
+
+  <!-- Background grid and scan line -->
+  <div class="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 grid-bg"></div>
+  <div class="fixed top-0 w-full h-0.5 bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-30 scan-line"></div>
+
+  <!-- Corners -->
+  <div class="fixed top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-green-500/30"></div>
+  <div class="fixed top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-green-500/30"></div>
+  <div class="fixed bottom-4 left-4 w-12 h-12 border-b-2 border-l-2 border-green-500/30"></div>
+  <div class="fixed bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 border-green-500/30"></div>
+
+  <!-- Particles -->
+  <div id="particles" class="fixed inset-0 pointer-events-none"></div>
+
+  <div class="max-w-7xl mx-auto p-4 lg:p-8 relative z-10">
+    <!-- Header -->
+    <header class="mb-8 text-center slide-in">
+      <div class="inline-flex items-center justify-center w-20 h-20 mb-4 relative">
+        <div class="absolute inset-0 bg-green-500 blur-2xl opacity-40 animate-pulse"></div>
+        <svg class="w-20 h-20 text-green-400 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <h1 class="text-4xl lg:text-5xl font-extrabold text-green-400 terminal-text tracking-wide">CYBER DEFENSE CONSOLE</h1>
+      <div class="flex items-center justify-center gap-2 text-green-500 terminal-text mt-1">
+        <span>&gt;</span><span>REAL-TIME INCIDENT</span><span class="blink">_</span>
+      </div>
+      <div class="mt-2 text-sm text-gray-400 terminal-text">
         Agent: <span class="text-green-400 font-semibold">{{ username }}</span> ·
         Operation ID: <span class="text-blue-300 font-mono">{{ operation_id }}</span>
       </div>
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left column -->
       <section class="space-y-4">
-        <div id="adversary-card" class="bg-red-900/40 border border-red-700/60 rounded-xl p-4 shadow-lg">
+        <!-- Adversary card -->
+        <div id="adversary-card" class="relative bg-slate-900/80 backdrop-blur-sm border-2 border-green-500/30 rounded-2xl p-4 shadow-2xl glow-pulse animate-scan-bg">
           <div class="flex items-center justify-between">
-            <h3 class="text-xl font-bold">Adversary: <span id="adv-name">—</span></h3>
-            <span id="auto-badge" class="text-xs bg-red-700 px-2 py-1 rounded animate-flicker">Autonomous Attack Detected</span>
+            <h3 class="text-xl font-bold">Adversary: <span id="adv-name" class="text-green-300">—</span></h3>
+            <span id="auto-badge" class="text-xs bg-green-600/30 border border-green-500/40 px-2 py-1 rounded-full terminal-text">Autonomous Attack</span>
           </div>
-          <p class="mt-1">Planner: <span id="adv-planner" class="text-blue-300">—</span></p>
+          <p class="mt-1">Planner: <span id="adv-planner" class="text-emerald-300">—</span></p>
           <p class="mt-1">Status: <span id="adv-status" class="text-yellow-300">Loading…</span></p>
           <p class="mt-1 text-sm text-gray-400">Op ID: <span id="op-id" class="font-mono">{{ operation_id }}</span></p>
         </div>
 
-        <div class="relative bg-black rounded-xl p-4 h-64 overflow-y-auto font-mono text-green-400 text-sm animate-scan" id="terminal"></div>
+        <!-- Terminal log -->
+        <div class="relative bg-black/80 rounded-2xl p-4 h-64 overflow-y-auto font-mono text-green-400 text-sm border border-green-500/20" id="terminal"
+             aria-live="polite" aria-label="Operation terminal log"></div>
 
+        <!-- Access tiles -->
         <div class="grid grid-cols-3 gap-2 text-center font-mono text-xs">
-          <div class="bg-red-800/70 p-2 rounded animate-flicker">ACCESS DENIED</div>
-          <div class="bg-red-800/70 p-2 rounded animate-flicker">ACCESS DENIED</div>
-          <div class="bg-green-800/70 p-2 rounded">ACCESS GRANTED</div>
+          <div class="bg-red-900/40 border border-red-700/50 p-2 rounded animate-flicker">ACCESS DENIED</div>
+          <div class="bg-red-900/40 border border-red-700/50 p-2 rounded animate-flicker">ACCESS DENIED</div>
+          <div class="bg-green-900/30 border border-green-700/40 p-2 rounded">ACCESS GRANTED</div>
         </div>
       </section>
 
+      <!-- Middle column -->
       <section class="space-y-4">
-        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
-          <h4 class="font-semibold mb-2">Security Status</h4>
+        <!-- Security status -->
+        <div class="bg-slate-900/80 border-2 border-green-500/30 rounded-2xl p-4 backdrop-blur-sm">
+          <h4 class="font-semibold mb-2 terminal-text text-green-400">&gt; SECURITY STATUS</h4>
           <div class="flex items-center gap-4">
-            <div class="relative w-28 h-28 rounded-full border-4 border-green-500/70 grid place-items-center">
+            <div class="relative w-28 h-28 rounded-full border-4 border-emerald-500/60 grid place-items-center">
               <span id="detection-pct" class="text-2xl font-bold">—%</span>
             </div>
             <div class="flex-1">
-              <p>Compromise Risk: <span id="risk" class="font-semibold text-red-400">—</span></p>
-              <div class="mt-2 w-full h-2 bg-gray-800 rounded">
-                <div id="risk-bar" class="h-2 bg-red-500 rounded" style="width: 0%"></div>
+              <p>Compromise Risk: <span id="risk" class="font-semibold text-emerald-300">—</span></p>
+              <div class="mt-2 w-full h-2 bg-slate-800 rounded">
+                <div id="risk-bar" class="h-2 bg-green-500 rounded" style="width: 0%"></div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4 text-center">
-          <p class="text-yellow-300 text-xl font-bold mb-3">Engagement begins in <span id="countdown">5</span>…</p>
-          <button id="start-btn" class="bg-green-600 hover:bg-green-700 transition px-6 py-3 rounded-full font-bold animate-pulseGlow disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+        <!-- Countdown / Start -->
+        <div class="bg-slate-900/80 border-2 border-green-500/30 rounded-2xl p-6 text-center backdrop-blur-sm">
+          <p class="text-emerald-300 text-xl font-bold mb-3 terminal-text">
+            Engagement begins in <span id="countdown">5</span>…
+          </p>
+          <button id="start-btn"
+                  class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 transition px-6 py-3 rounded-full font-bold animate-pulseGlow disabled:opacity-40 disabled:cursor-not-allowed terminal-text"
+                  disabled aria-label="Start Investigation">
             🚀 Start Investigation
           </button>
-          <p class="text-xs text-gray-400 mt-2">This will transition to the Q/A phase.</p>
+          <p class="text-xs text-gray-400 mt-2 terminal-text">This will transition to the Q/A phase.</p>
         </div>
       </section>
 
+      <!-- Right column -->
       <aside class="space-y-4">
-        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
-          <h4 class="font-semibold mb-2">Agent Profile</h4>
+        <!-- Agent profile -->
+        <div class="bg-slate-900/80 border-2 border-green-500/30 rounded-2xl p-4 backdrop-blur-sm">
+          <h4 class="font-semibold mb-2 terminal-text text-green-400">&gt; AGENT PROFILE</h4>
           <p>Agent: <span id="agent-name">{{ username }}</span></p>
           <p>Level: <span id="agent-level" class="text-yellow-300 font-semibold">Cyber Sentinel</span></p>
           <div class="mt-3">
             <label class="text-sm text-gray-300">XP Progress</label>
-            <div class="w-full bg-gray-800 rounded-full h-3 mt-1">
+            <div class="w-full bg-slate-800 rounded-full h-3 mt-1">
               <div id="xp-bar" class="bg-green-500 h-3 rounded-full" style="width: 0%"></div>
             </div>
             <p class="text-sm mt-1">XP: <span id="xp">0</span> / <span id="xp-max">1000</span></p>
@@ -88,195 +169,198 @@
           </div>
         </div>
 
-        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
-          <h4 class="font-semibold mb-2">Leaderboard (Top 5)</h4>
+        <!-- Leaderboard -->
+        <div class="bg-slate-900/80 border-2 border-green-500/30 rounded-2xl p-4 backdrop-blur-sm">
+          <h4 class="font-semibold mb-2 terminal-text text-green-400">&gt; LEADERBOARD (Top 5)</h4>
           <table class="w-full text-sm">
             <thead class="text-gray-400">
-              <tr><th class="text-left">Rank</th><th class="text-left">Agent</th><th class="text-right">Score</th></tr>
+              <tr>
+                <th class="text-left py-1">Rank</th>
+                <th class="text-left py-1">Agent</th>
+                <th class="text-right py-1">Score</th>
+              </tr>
             </thead>
             <tbody id="lb-body"></tbody>
           </table>
         </div>
 
-        <div class="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
-          <h4 class="font-semibold mb-2">Badges</h4>
+        <!-- Badges -->
+        <div class="bg-slate-900/80 border-2 border-green-500/30 rounded-2xl p-4 backdrop-blur-sm">
+          <h4 class="font-semibold mb-2 terminal-text text-green-400">&gt; BADGES</h4>
           <div id="badges" class="flex flex-wrap gap-2"></div>
         </div>
       </aside>
     </div>
   </div>
 
+  <!-- Data injected by Flask -->
   <script>
-    // Injected by Flask
-    const operationId = {{ (operation_id or null) | tojson }};
-  const agentName   = {{ (username or "") | tojson }};
-  const userId      = {{ (user_id or 0) | tojson }};
-  const userXp      = {{ (xp or 0) | tojson }};
-
-  // Set to true to allow Start without Caldera (for local testing)
-  const DEV_BYPASS = false;
-
-  // UI handles
-  const $ = (id) => document.getElementById(id);
-  const termEl = $("terminal");
-  const statusEl = $("adv-status");
-  const nameEl = $("adv-name");
-  const plannerEl = $("adv-planner");
-  const detectionPctEl = $("detection-pct");
-  const riskEl = $("risk");
-  const riskBarEl = $("risk-bar");
-  const countdownEl = $("countdown");
-  const startBtn = $("start-btn");
-
-  // We’ll pass these to /questions
-  let mitre = { tactic: "Reconnaissance", technique_id: "" };
-
-  function appendLog(line) {
-    const row = document.createElement("div");
-    row.textContent = line;
-    termEl.appendChild(row);
-    termEl.scrollTo({ top: termEl.scrollHeight });
-  }
-
-  function setRisk(pct) {
-    const r = pct >= 70
-      ? { label: "High", bar: 85, color: "bg-red-500", text: "text-red-400" }
-      : pct >= 40
-      ? { label: "Medium", bar: 55, color: "bg-yellow-500", text: "text-yellow-300" }
-      : { label: "Low", bar: 25, color: "bg-green-500", text: "text-green-400" };
-    detectionPctEl.textContent = `${pct}%`;
-    riskEl.textContent = r.label;
-    riskEl.className = `font-semibold ${r.text}`;
-    riskBarEl.style.width = `${r.bar}%`;
-    riskBarEl.className = `h-2 rounded ${r.color}`;
-  }
-
-  function enableStart() {
-    startBtn.disabled = false;
-    startBtn.classList.add("animate-pulseGlow");
-  }
-  function disableStart() {
-    startBtn.disabled = true;
-    startBtn.classList.remove("animate-pulseGlow");
-  }
-
-  // Finished-only flow: when Caldera → finished, run a short countdown then enable Start
-  function finishedCountdown(n = 3) {
-    countdownEl.textContent = n;
-    const timer = setInterval(() => {
-      n -= 1;
-      countdownEl.textContent = n;
-      if (n <= 0) {
-        clearInterval(timer);
-        enableStart();
-        appendLog(`[${new Date().toLocaleTimeString()}] ✅ Ready to engage.`);
-      }
-    }, 1000);
-  }
-
-  async function fetchStatus() {
-    // If there’s no operation yet, don’t hammer Caldera
-    if (!operationId) {
-      statusEl.textContent = "No operation";
-      appendLog(`[${new Date().toLocaleTimeString()}] ℹ No operation id in session.`);
-      setRisk(20);
-      if (DEV_BYPASS) {
-        // Optional: allow Start for dev
-        countdownEl.textContent = 0;
-        enableStart();
-      } else {
-        disableStart();
-      }
-      return;
-    }
-
-    try {
-      const response = await fetch(`/attack/status/${operationId}`);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const s = await response.json();
-
-      // Fill card
-      nameEl.textContent = s.name || "Unknown Adversary";
-      plannerEl.textContent = s.planner || "atomic";
-      const state = (s.state || "unknown").toLowerCase();
-      statusEl.textContent = s.state || "Unknown";
-
-      // Visuals (purely cosmetic now)
-      setRisk(state === "finished" ? 100 : 20);
-
-      appendLog(`[${new Date().toLocaleTimeString()}] Operation ${s.id || "N/A"} state: ${s.state || "?"}`);
-      if (s.host_group?.length) appendLog(`>> Hosts in scope: ${s.host_group.length}`);
-      if (s.chain?.length) appendLog(`>> Abilities executed: ${s.chain.length}`);
-
-      // Try to pull MITRE hints from your payload (adjust keys if needed)
-      mitre.tactic = s.current_tactic || mitre.tactic;
-      mitre.technique_id = (s.current_technique || (s.last_ability && s.last_ability.technique_id)) || mitre.technique_id;
-
-      // ✅ Gate Start on FINISHED only
-      if (state === "finished") {
-        // Run a short 3..2..1 then unlock
-        finishedCountdown(3);
-      } else {
-        disableStart();
-      }
-    } catch (err) {
-      console.error("fetchStatus error:", err);
-      appendLog(`[${new Date().toLocaleTimeString()}] ⚠ Error fetching status`);
-      statusEl.textContent = "Unavailable";
-      setRisk(20);
-      if (DEV_BYPASS) {
-        countdownEl.textContent = 0;
-        enableStart();
-      } else {
-        disableStart();
-      }
-    }
-  }
-
-  // Route to questions with params
-  startBtn.addEventListener("click", () => {
-    const q = new URLSearchParams({
-      user_id: String(userId || 0),
-      xp: String(userXp || 0),
-      tactic: mitre.tactic || "Reconnaissance",
-      technique_id: mitre.technique_id || ""
-    });
-    window.location.href = `/questions?${q.toString()}`;
-  });
-
-  // Seed right column (unchanged from your version)
-  (function seedRightSidebar(){
-    const lbBody = $("lb-body");
-    const badgesEl = $("badges");
-    const xpEl = $("xp");
-    const xpMaxEl = $("xp-max");
-    const xpBarEl = $("xp-bar");
-    const scoreEl = $("score");
-    const rows = [
-      { r: 1, u: "cyborg_mk4", s: 2890 },
-      { r: 2, u: agentName, s: 1550 },
-      { r: 3, u: "ghost_shell", s: 1480 },
-      { r: 4, u: "zero_day", s: 1320 },
-      { r: 5, u: "root@neo", s: 1275 },
-    ];
-    lbBody.innerHTML = rows.map(x =>
-      `<tr class="border-b border-gray-800/60"><td class="py-1">#${x.r}</td><td class="py-1">${x.u}</td><td class="py-1 text-right">${x.s}</td></tr>`
-    ).join("");
-    const badgeList = ["🛡️ Sentinel", "⚡ Speed Runner", "🔍 Forensic Eye"];
-    badgesEl.innerHTML = badgeList.map(b =>
-      `<span class="inline-flex items-center gap-1 text-xs bg-gray-800 border border-gray-700 px-2 py-1 rounded">${b}</span>`
-    ).join("");
-    const xp = userXp || 0, max = 1000, score = 1200;
-    xpEl.textContent = xp; xpMaxEl.textContent = max;
-    xpBarEl.style.width = `${(xp / max) * 100}%`;
-    scoreEl.textContent = score;
-  })();
-
-  // Poll status every 10s
-  fetchStatus();
-  setInterval(fetchStatus, 10000);
+    const operationId = {{ operation_id|default(none, true)|tojson }};
+    const agentName   = {{ username|default("", true)|tojson }};
+    const userId      = {{ user_id|default(0, true)|tojson }};
+    const userXp      = {{ xp|default(0, true)|tojson }};
   </script>
 
-  <p class="text-xs text-gray-500 text-center mt-6">Operation ID: {{ operation_id }}</p>
+  <!-- Logic -->
+  <script>
+    const DEV_BYPASS = true;  // allow Start without Caldera when true
+
+    const $ = (id) => document.getElementById(id);
+    const termEl = $("terminal");
+    const statusEl = $("adv-status");
+    const nameEl = $("adv-name");
+    const plannerEl = $("adv-planner");
+    const detectionPctEl = $("detection-pct");
+    const riskEl = $("risk");
+    const riskBarEl = $("risk-bar");
+    const countdownEl = $("countdown");
+    const startBtn = $("start-btn");
+
+    let mitre = { tactic: "Reconnaissance", technique_id: "" };
+
+    function appendLog(line) {
+      const row = document.createElement("div");
+      row.textContent = line;
+      termEl.appendChild(row);
+      termEl.scrollTo({ top: termEl.scrollHeight });
+    }
+
+    function setRisk(pct) {
+      const r = pct >= 70
+        ? { label: "High", bar: 85, color: "bg-red-500", text: "text-red-400" }
+        : pct >= 40
+        ? { label: "Medium", bar: 55, color: "bg-yellow-500", text: "text-yellow-300" }
+        : { label: "Low", bar: 25, color: "bg-green-500", text: "text-green-400" };
+      detectionPctEl.textContent = `${pct}%`;
+      riskEl.textContent = r.label;
+      riskEl.className = `font-semibold ${r.text}`;
+      riskBarEl.style.width = `${r.bar}%`;
+      riskBarEl.className = `h-2 rounded ${r.color}`;
+    }
+
+    function enableStart() { startBtn.disabled = false; startBtn.classList.add("animate-pulseGlow"); }
+    function disableStart() { startBtn.disabled = true; startBtn.classList.remove("animate-pulseGlow"); }
+
+    function finishedCountdown(n = 3) {
+      countdownEl.textContent = n;
+      const timer = setInterval(() => {
+        n -= 1;
+        countdownEl.textContent = n;
+        if (n <= 0) {
+          clearInterval(timer);
+          enableStart();
+          appendLog(`[${new Date().toLocaleTimeString()}] ✅ Ready to engage.`);
+        }
+      }, 1000);
+    }
+
+    async function fetchStatus() {
+      if (!operationId) {
+        statusEl.textContent = "No operation";
+        appendLog(`[${new Date().toLocaleTimeString()}] ℹ No operation id in session.`);
+        setRisk(20);
+        if (DEV_BYPASS) { countdownEl.textContent = 0; enableStart(); } else { disableStart(); }
+        return;
+      }
+      try {
+        const response = await fetch(`/attack/status/${operationId}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const s = await response.json();
+        nameEl.textContent = s.name || "Unknown Adversary";
+        plannerEl.textContent = s.planner || "atomic";
+        const state = (s.state || "unknown").toLowerCase();
+        statusEl.textContent = s.state || "Unknown";
+        setRisk(state === "finished" ? 100 : 20);
+        appendLog(`[${new Date().toLocaleTimeString()}] Operation ${s.id || "N/A"} state: ${s.state || "?"}`);
+        if (s.host_group?.length) appendLog(`>> Hosts in scope: ${s.host_group.length}`);
+        if (s.chain?.length) appendLog(`>> Abilities executed: ${s.chain.length}`);
+        mitre.tactic = s.current_tactic || mitre.tactic;
+        mitre.technique_id = (s.current_technique || (s.last_ability && s.last_ability.technique_id)) || mitre.technique_id;
+        if (state === "finished") finishedCountdown(3); else disableStart();
+      } catch (err) {
+        console.error("fetchStatus error:", err);
+        appendLog(`[${new Date().toLocaleTimeString()}] ⚠ Error fetching status`);
+        statusEl.textContent = "Unavailable";
+        setRisk(20);
+        if (DEV_BYPASS) { countdownEl.textContent = 0; enableStart(); } else { disableStart(); }
+      }
+    }
+
+    // Sidebar helpers (keep your existing endpoints)
+    async function fetchUserProgress(uid) {
+      const res = await fetch(`/api/user/${uid}/progress`);
+      if (!res.ok) throw new Error(`progress ${res.status}`);
+      return res.json();
+    }
+    async function fetchLeaderboard(limit=5) {
+      const res = await fetch(`/api/leaderboard?limit=${limit}`);
+      if (!res.ok) throw new Error(`leaderboard ${res.status}`);
+      return res.json();
+    }
+    function renderBadges(names) {
+      const el = document.getElementById("badges");
+      el.innerHTML = (names || []).map(b =>
+        `<span class="inline-flex items-center gap-1 text-xs bg-slate-800 border border-slate-700 px-2 py-1 rounded">${b}</span>`
+      ).join("") || `<span class="text-sm text-gray-500">No badges yet.</span>`;
+    }
+    function renderProgress(p) {
+      document.getElementById("agent-name").textContent = p.username || agentName || "Agent";
+      document.getElementById("xp").textContent = p.xp ?? 0;
+      document.getElementById("score").textContent = p.score ?? 0;
+      const max = 1000; // keep in sync with backend curve if used
+      document.getElementById("xp-max").textContent = max;
+      document.getElementById("xp-bar").style.width = `${Math.min(100, (p.xp || 0) / max * 100)}%`;
+      renderBadges(p.badges || []);
+    }
+    async function refreshSidebar() {
+      if (!userId) return;
+      try {
+        const p = await fetchUserProgress(userId);
+        renderProgress(p);
+        const rows = await fetchLeaderboard(5);
+        const lbBody = document.getElementById("lb-body");
+        lbBody.innerHTML = rows.map(r =>
+          `<tr class="border-b border-slate-800/60">
+             <td class="py-1">#${r.rank}</td>
+             <td class="py-1">${r.username}</td>
+             <td class="py-1 text-right">${r.score}</td>
+           </tr>`
+        ).join("");
+      } catch (e) { console.warn("sidebar refresh failed", e); }
+    }
+
+    // Start button → Q/A phase
+    document.getElementById("start-btn").addEventListener("click", () => {
+      const q = new URLSearchParams({
+        user_id: String(userId || 0),
+        xp: String(userXp || 0),
+        tactic: mitre.tactic || "Reconnaissance",
+        technique_id: mitre.technique_id || ""
+      });
+      window.location.href = `/questions?${q.toString()}`;
+    });
+
+    // Particles
+    (function () {
+      const particlesContainer = document.getElementById('particles');
+      for (let i = 0; i < 18; i++) {
+        const p = document.createElement('div');
+        p.className = 'absolute w-1 h-1 bg-green-400 rounded-full opacity-40';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.top = Math.random() * 100 + '%';
+        p.style.animation = `float ${Math.random() * 20 + 10}s infinite ease-in-out ${Math.random() * 5}s`;
+        p.style.boxShadow = '0 0 10px rgba(34, 197, 94, 0.6)';
+        particlesContainer.appendChild(p);
+      }
+    })();
+
+    // Kickoff
+    fetchStatus();
+    setInterval(fetchStatus, 10000);
+    refreshSidebar();
+    setInterval(refreshSidebar, 10000);
+  </script>
+
+  <p class="text-xs text-gray-500 text-center mt-6 terminal-text">&gt; Operation ID: {{ operation_id }}</p>
 </body>
 </html>

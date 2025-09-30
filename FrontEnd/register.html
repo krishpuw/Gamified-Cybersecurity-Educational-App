@@ -1,124 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Register - Cybersecurity Game</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Access Terminal - Register</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      background-color: #0f172a;
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.3), 0 0 40px rgba(34, 197, 94, 0.1); }
+      50% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.5), 0 0 60px rgba(34, 197, 94, 0.2); }
     }
-
-    .register-container {
-      background-color: #1e293b;
-      padding: 40px;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-      width: 300px;
-      text-align: center;
+    @keyframes scanLine {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100vh); }
     }
-
-    .register-container h2 {
-      margin-bottom: 20px;
-      font-size: 28px;
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
     }
-
-    .register-container input {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 15px;
-      border: none;
-      border-radius: 8px;
-      background-color: #334155;
-      color: white;
-      font-size: 16px;
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-
-    .register-container button,
-    .register-container a.button-link {
-      width: 100%;
-      padding: 12px;
-      background-color: #22c55e;
-      border: none;
-      border-radius: 8px;
-      font-size: 18px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-      margin-top: 10px;
-      transition: background-color 0.2s;
+    .glow-pulse { animation: glowPulse 2s infinite; }
+    .scan-line { animation: scanLine 4s linear infinite; }
+    .blink { animation: blink 1s infinite; }
+    .slide-in { animation: slideIn 0.5s ease-out; }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px);
+      background-size: 30px 30px;
     }
-
-    .register-container button:hover,
-    .register-container a.button-link:hover {
-      background-color: #16a34a;
+    .input-glow:focus {
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.5), 0 0 20px rgba(34, 197, 94, 0.3);
+      outline: none;
     }
-
-    .flash-message {
-      padding: 12px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: bold;
-      text-align: center;
-    }
-
-    .flash-message.success {
-      background-color: #16a34a;
-      color: white;
-    }
-
-    .flash-message.error {
-      background-color: #dc2626;
-      color: white;
+    .terminal-text { font-family: 'Courier New', monospace; }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+      .scan-line { display: none !important; }
     }
   </style>
-
-  <script>
-    // Auto-hide flash message after 3 seconds
-    setTimeout(function () {
-      const flash = document.querySelector('.flash-message');
-      if (flash) {
-        flash.style.display = 'none';
-      }
-    }, 3000);
-  </script>
 </head>
-<body>
+<body class="bg-slate-950 text-white overflow-hidden">
 
-  <div class="register-container">
-    <h2>Register</h2>
+  <!-- Background grid -->
+  <div class="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 grid-bg"></div>
 
-    <!-- Flash message display block -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash-message {{ category }}">
-            {{ message }}
+  <!-- Scan line -->
+  <div class="fixed top-0 w-full h-0.5 bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-30 scan-line"></div>
+
+  <!-- Particles -->
+  <div id="particles" class="fixed inset-0 pointer-events-none"></div>
+
+  <!-- Corner brackets -->
+  <div class="fixed top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-green-500/30"></div>
+  <div class="fixed top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-green-500/30"></div>
+  <div class="fixed bottom-4 left-4 w-12 h-12 border-b-2 border-l-2 border-green-500/30"></div>
+  <div class="fixed bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 border-green-500/30"></div>
+
+  <!-- Content -->
+  <div class="relative z-10 flex items-center justify-center min-h-screen px-4 py-8">
+    <div class="w-full max-w-md">
+      
+      <!-- Header -->
+      <div class="text-center mb-8 slide-in">
+        <div class="inline-flex items-center justify-center w-20 h-20 mb-4 relative">
+          <div class="absolute inset-0 bg-green-500 blur-2xl opacity-40 animate-pulse"></div>
+          <svg class="w-20 h-20 text-green-400 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z">
+            </path>
+          </svg>
+        </div>
+        <h2 class="text-4xl font-bold mb-2 terminal-text text-green-400">NEW RECRUIT REGISTRATION</h2>
+        <div class="flex items-center justify-center gap-2 text-green-500 terminal-text">
+          <span>&gt;</span>
+          <span>CREATE SECURE CREDENTIALS</span>
+          <span class="blink">_</span>
+        </div>
+      </div>
+
+      <!-- Card -->
+      <div class="relative glow-pulse slide-in">
+        <div class="absolute inset-0 bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-green-500/20 rounded-2xl blur-xl"></div>
+
+        <div class="relative bg-slate-900/80 backdrop-blur-sm border-2 border-green-500/30 rounded-2xl p-8 shadow-2xl">
+          <!-- Title bar -->
+          <div class="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-green-500/10 to-transparent rounded-t-2xl"></div>
+          <div class="flex items-center gap-2 mb-6 pb-4 border-b border-green-500/20">
+            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            <span class="ml-2 text-xs text-green-400 terminal-text">REGISTRATION_PORTAL.exe</span>
           </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
 
-    <form method="POST" action="/register">
-      <input type="text" name="username" placeholder="Username" required>
-      <input type="password" name="password" placeholder="Password" required>
-      <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-      <button type="submit">Register</button>
-    </form>
+          <!-- Flash messages -->
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded-lg border-l-4 terminal-text text-sm slide-in
+                  {% if category == 'success' %} bg-green-900/30 border-green-500 text-green-400 {% else %} bg-red-900/30 border-red-500 text-red-400 {% endif %}">
+                  <div class="flex items-center gap-2">
+                    {% if category == 'success' %}
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                    {% else %}
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                    {% endif %}
+                    <span>{{ message }}</span>
+                  </div>
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
 
-    <!-- Link to login page -->
-    <a href="/login" class="button-link">Already have an account? Login</a>
+          <!-- Form -->
+          <form method="POST" action="/register" class="space-y-5" autocomplete="off">
+            <div class="space-y-2">
+              <label class="block text-green-400 text-sm terminal-text flex items-center gap-2">
+                <span>&gt;</span>
+                <span>USERNAME</span>
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Choose a username"
+                  required
+                  class="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-green-500/30 rounded-lg text-white placeholder-slate-500 terminal-text input-glow transition-all duration-300"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="block text-green-400 text-sm terminal-text flex items-center gap-2">
+                <span>&gt;</span>
+                <span>PASSWORD</span>
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                  </svg>
+                </div>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Create a strong password"
+                  required
+                  class="w-full pl-10 pr-12 py-3 bg-slate-950/50 border border-green-500/30 rounded-lg text-white placeholder-slate-500 terminal-text input-glow transition-all duration-300"
+                />
+                <!-- (Optional) show/hide toggle could go here -->
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="block text-green-400 text-sm terminal-text flex items-center gap-2">
+                <span>&gt;</span>
+                <span>CONFIRM PASSWORD</span>
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 11c.942 0 1.809.406 2.414 1.06l4.95-4.95a3 3 0 10-4.243-4.243l-4.95 4.95A3.5 3.5 0 1012 11z"></path>
+                  </svg>
+                </div>
+                <input
+                  type="password"
+                  name="confirm_password"
+                  placeholder="Re-enter password"
+                  required
+                  class="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-green-500/30 rounded-lg text-white placeholder-slate-500 terminal-text input-glow transition-all duration-300"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-slate-900 font-bold rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-green-500/50 terminal-text text-lg flex items-center justify-center gap-2"
+              aria-label="Create account"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v6m3-3H9m-5 8a9 9 0 1118 0 9 9 0 01-18 0z"></path>
+              </svg>
+              CREATE ACCOUNT
+            </button>
+          </form>
+
+          <!-- Footer actions -->
+          <div class="mt-6 pt-6 border-t border-green-500/20">
+            <div class="text-center text-slate-400 text-sm terminal-text mb-4">
+              <span>&gt;</span> ALREADY HAVE CLEARANCE?
+            </div>
+            <a
+              href="/login"
+              class="block w-full py-3 bg-slate-950/50 hover:bg-slate-800/50 border-2 border-green-500/30 hover:border-green-500/50 text-green-400 font-bold rounded-lg transition-all duration-300 terminal-text text-center"
+            >
+              SIGN IN
+            </a>
+          </div>
+
+          <div class="mt-6 text-center">
+            <div class="inline-flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-full text-xs text-green-400 terminal-text">
+              <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span>REGISTRATION CHANNEL SECURE</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Small footer -->
+      <div class="mt-6 text-center text-slate-500 text-xs terminal-text">
+        <p>&gt; Passwords are hashed and salted</p>
+        <p>&gt; Unauthorized access strictly prohibited</p>
+      </div>
+    </div>
   </div>
 
+  <!-- Particles + flash hide -->
+  <script>
+    // particles
+    (function () {
+      const particlesContainer = document.getElementById('particles');
+      for (let i = 0; i < 15; i++) {
+        const p = document.createElement('div');
+        p.className = 'absolute w-1 h-1 bg-green-400 rounded-full opacity-40';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.top = Math.random() * 100 + '%';
+        p.style.animation = 'float ' + (Math.random() * 20 + 10) + 's infinite ease-in-out ' + (Math.random() * 5) + 's';
+        p.style.boxShadow = '0 0 10px rgba(34, 197, 94, 0.6)';
+        particlesContainer.appendChild(p);
+      }
+      const style = document.createElement('style');
+      style.textContent =
+        '@keyframes float { 0%, 100% { transform: translateY(0px) translateX(0px); } 25% { transform: translateY(-20px) translateX(10px); } 50% { transform: translateY(-10px) translateX(-10px); } 75% { transform: translateY(-30px) translateX(5px); } }';
+      document.head.appendChild(style);
+    })();
+
+    // auto-hide flask flash after 3s (keeps parity with your login page behavior)
+    setTimeout(function () {
+      const flash = document.querySelector('.flash-message');
+      if (flash) flash.style.display = 'none';
+    }, 3000);
+  </script>
 </body>
 </html>

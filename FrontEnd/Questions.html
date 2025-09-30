@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Questions</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-950 text-white min-h-screen">
+    <div class="max-w-3xl mx-auto p-4 lg:p-8">
+      <header class="mb-4">
+        <h1 class="text-2xl font-bold">Q/A Phase</h1>
+        <p id="meta" class="text-sm text-gray-400">Preparing questions…</p>
+        <!-- Live XP status -->
+        <div id="xpStrip" class="mb-3 text-sm text-gray-300 flex items-center gap-4">
+          <span>XP: <strong id="xpReal">—</strong></span>
+          <span>This round: <strong id="xpSession">+0</strong></span>
+        </div>
+      </header>
+
+      <div id="progress" class="mb-4 text-sm text-gray-300">
+        Question <span id="qnum">1</span> / 7
+      </div>
+
+      <div id="card" class="bg-gray-900/70 border border-gray-800 rounded-xl p-6">
+        <div id="stem" class="text-lg font-semibold mb-4">Loading…</div>
+        <div id="choices" class="space-y-2"></div>
+        <button id="submit" class="mt-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded font-bold disabled:opacity-50" disabled>
+          Submit
+        </button>
+        <div id="explanation" class="mt-4 text-sm text-gray-300 hidden"></div>
+        <div id="footer" class="mt-4 text-xs text-gray-500">
+          <span id="tier-badge" class="px-2 py-1 rounded bg-gray-800 border border-gray-700"></span>
+          <span id="timer" class="ml-3">⏱ <span id="time-left">--</span>s</span>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-between">
+        <button id="prev" class="px-3 py-2 rounded bg-gray-800 border border-gray-700 disabled:opacity-50" disabled>← Previous</button>
+        <button id="next" class="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 disabled:opacity-50" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- SESSION SUMMARY MODAL (in-page, non-destructive) -->
+    <div id="summaryModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60">
+      <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-xl">
+        <h3 class="text-2xl font-bold text-green-400 mb-2">Session Summary</h3>
+        <p id="summarySub" class="text-sm text-gray-300 mb-4">Great work — here’s how you did.</p>
+
+        <div class="grid grid-cols-2 gap-3 text-sm text-gray-200 mb-4">
+          <div class="bg-gray-800 p-3 rounded">
+            <div class="text-xs text-gray-400">Correct</div>
+            <div id="summary-correct" class="text-lg font-semibold">0</div>
+          </div>
+          <div class="bg-gray-800 p-3 rounded">
+            <div class="text-xs text-gray-400">Session XP</div>
+            <div id="summary-xp" class="text-lg font-semibold">+0</div>
+          </div>
+          <div class="bg-gray-800 p-3 rounded col-span-2">
+            <div class="text-xs text-gray-400">New Badges</div>
+            <div id="summary-badges" class="mt-2"></div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button id="summaryRetry" class="px-3 py-2 rounded bg-gray-800 border border-gray-700">Try another set</button>
+          <button id="summaryDashboard" class="px-3 py-2 rounded bg-green-600 hover:bg-green-700">Back to Dashboard</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- XP strip state ---
+      const xpRealEl = document.getElementById("xpReal");
+      const xpSessionEl = document.getElementById("xpSession");
+
+      let sessionXp = 0; // cumulative for this 7-question set
+      let realXp = null; // server truth
+
+      // URL params
+      const params = new URLSearchParams(location.search);
+      const userId = Number(params.get("user_id") || "0");
+      const xp = params.get("xp") ? Number(params.get("xp")) : null;
+      const tactic = params.get("tactic") || "Reconnaissance";
+      const technique_id = params.get("technique_id") || null;
+
+      async function loadRealXp() {
+        if (!userId) return;
+        try {
+          const res = await fetch(`/api/user/${userId}/progress`);
+          if (!res.ok) throw new Error("progress");
+          const p = await res.json();
+          realXp = Number(p?.xp ?? 0);
+          xpRealEl.textContent = realXp;
+          xpSessionEl.textContent = `+${sessionXp}`;
+        } catch {
+          // keep placeholders if it fails
+        }
+      }
+
+      // fetch initial XP once
+      loadRealXp();
+
+      // --- DOM refs ---
+      const qnumEl = document.getElementById("qnum");
+      const stemEl = document.getElementById("stem");
+      const choicesEl = document.getElementById("choices");
+      const submitBtn = document.getElementById("submit");
+      const explEl = document.getElementById("explanation");
+      const tierBadge = document.getElementById("tier-badge");
+      const timeLeftEl = document.getElementById("time-left");
+      const nextBtn = document.getElementById("next");
+      const prevBtn = document.getElementById("prev");
+      const metaEl = document.getElementById("meta");
+
+      // Modal refs (now safe because modal HTML is above this script)
+      const summaryModal = document.getElementById("summaryModal");
+      const summaryCorrectEl = document.getElementById("summary-correct");
+      const summaryXpEl = document.getElementById("summary-xp");
+      const summaryBadgesEl = document.getElementById("summary-badges");
+      const summaryRetryBtn = document.getElementById("summaryRetry");
+      const summaryDashboardBtn = document.getElementById("summaryDashboard");
+
+      // --- quiz state ---
+      let batch = [];
+      let idx = 0;
+      let selection = null;
+      let answerKey = null;
+      let timer = null;
+      let timeLeft = 0;
+      let currentTier = "simple";
+      let xpReward = 0;
+      let results = []; // { qid, correct, xp_gain, new_badges }
+
+      function renderQuestion(i) {
+        const item = batch[i];
+        if (!item) return;
+        qnumEl.textContent = i + 1;
+        stemEl.textContent = item.question;
+        choicesEl.innerHTML = "";
+        const labels = ["A", "B", "C", "D"];
+        answerKey = item.answer_key;
+        currentTier = item?.difficulty_meta?.tier || "simple";
+        xpReward = item?.difficulty_meta?.xp_reward || 5;
+        tierBadge.textContent = `Tier: ${currentTier} (+${xpReward} XP if correct)`;
+
+        (item.choices || []).forEach((c, ci) => {
+          const lab = labels[ci] || "?";
+          const btn = document.createElement("button");
+          btn.className =
+            "w-full text-left px-3 py-2 rounded bg-gray-800 border border-gray-700 hover:bg-gray-700";
+          btn.innerHTML = `<span class="font-mono">${lab}.</span> ${c}`;
+          btn.onclick = () => {
+            selection = lab;
+            [...choicesEl.children].forEach((ch) =>
+              ch.classList.remove("ring-2", "ring-blue-400")
+            );
+            btn.classList.add("ring-2", "ring-blue-400");
+            submitBtn.disabled = false;
+          };
+          choicesEl.appendChild(btn);
+        });
+
+        explEl.classList.add("hidden");
+        submitBtn.disabled = true;
+        prevBtn.disabled = i === 0;
+        nextBtn.disabled = true;
+
+        if (timer) clearInterval(timer);
+        timeLeft = item?.difficulty_meta?.time_s || 45;
+        timeLeftEl.textContent = timeLeft;
+        timer = setInterval(() => {
+          timeLeft -= 1;
+          timeLeftEl.textContent = Math.max(0, timeLeft);
+          if (timeLeft <= 0) {
+            clearInterval(timer);
+            submitBtn.disabled = true;
+            nextBtn.disabled = false;
+            explEl.textContent = item.explanation || "Time up.";
+            explEl.classList.remove("hidden");
+          }
+        }, 1000);
+      }
+
+      submitBtn.addEventListener("click", async () => {
+        const item = batch[idx];
+        const correct = selection === answerKey;
+        explEl.textContent = (item.explanation || "") + (correct ? " ✅" : " ❌");
+        explEl.classList.remove("hidden");
+        nextBtn.disabled = false;
+        submitBtn.disabled = true; // prevent double submits
+
+        try {
+          const res = await fetch("/api/engagement/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              user_id: userId,
+              operation_id: null,
+              question_id: item?.id || `q-${idx + 1}`,
+              is_correct: correct,
+              response_time_ms:
+                ((item?.difficulty_meta?.time_s || 45) - timeLeft) * 1000,
+              difficulty: currentTier || "easy",
+            }),
+          });
+          const payload = await res.json();
+
+          // record into in-page results
+          const gained = Number(payload?.xp_gain ?? 0);
+          const new_badges = payload?.new_badges || [];
+          results.push({
+            qid: item?.id || `q-${idx + 1}`,
+            correct,
+            xp_gain: gained,
+            new_badges,
+          });
+
+          // LIVE XP update (Option B)
+          const newXp = Number(payload?.new_xp ?? (realXp ?? 0) + gained);
+          sessionXp += gained;
+          realXp = newXp;
+          xpRealEl.textContent = realXp;
+          xpSessionEl.textContent = `+${sessionXp}`;
+        } catch (e) {
+          console.warn("engagement update failed", e);
+        } finally {
+          nextBtn.disabled = false;
+        }
+      });
+
+      nextBtn.addEventListener("click", () => {
+        if (idx < batch.length - 1) {
+          idx += 1;
+          renderQuestion(idx);
+          return;
+        }
+
+        // finished all questions -> show in-page modal summary (no navigation)
+        const correctCount = results.filter((r) => r.correct).length;
+        const sessionXpTotal = sessionXp;
+
+        // populate modal
+        summaryCorrectEl.textContent = `${correctCount} / ${
+          batch.length || 7
+        }`;
+        summaryXpEl.textContent = `+${sessionXpTotal}`;
+
+        // collect unique new badges across the session
+        const allBadges = results.flatMap((r) => r.new_badges || []);
+        const uniqueBadges = [...new Set(allBadges)];
+        if (uniqueBadges.length === 0) {
+          summaryBadgesEl.innerHTML =
+            '<span class="text-sm text-gray-400">No new badges this session</span>';
+        } else {
+          summaryBadgesEl.innerHTML = uniqueBadges
+            .map(
+              (b) =>
+                `<span class="inline-block bg-gray-800 px-2 py-1 rounded mr-1 text-xs">${b}</span>`
+            )
+            .join("");
+        }
+
+        // show modal
+        summaryModal.classList.remove("hidden");
+        summaryModal.classList.add("flex");
+      });
+
+      prevBtn.addEventListener("click", () => {
+        if (idx > 0) {
+          idx -= 1;
+          renderQuestion(idx);
+        }
+      });
+
+      // Modal buttons
+      summaryRetryBtn.addEventListener("click", async () => {
+        // reset session state, close modal, and regenerate a new batch in-place
+        results = [];
+        sessionXp = 0;
+        xpSessionEl.textContent = `+${sessionXp}`;
+        summaryModal.classList.remove("flex");
+        summaryModal.classList.add("hidden");
+        try {
+          await loadBatch();
+        } catch (e) {
+          console.error("Could not regenerate questions", e);
+          window.location.reload();
+        }
+      });
+
+      summaryDashboardBtn.addEventListener("click", () => {
+        window.location.href = "/game";
+      });
+
+      // Load a fresh batch of 7
+      async function loadBatch() {
+        const payload = { user_id: userId, tactic, technique_id };
+        if (xp !== null) payload.xp = xp;
+        const res = await fetch("/api/questions/generate7", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to get questions");
+        batch = data.items || [];
+        metaEl.textContent = `Tier resolved: ${data.tier} · Generated: ${data.count}`;
+        idx = 0;
+        renderQuestion(idx);
+      }
+
+      loadBatch().catch((err) => {
+        metaEl.textContent = "Error loading questions";
+        console.error(err);
+      });
+    </script>
+  </body>
+</html>
