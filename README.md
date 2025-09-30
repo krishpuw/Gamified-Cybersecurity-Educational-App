@@ -72,7 +72,7 @@ flask db upgrade
 python app.py
 App runs at 👉 http://127.0.0.1:5000
 
-🔑 Environment Variables
+# 🔑 Environment Variables
 
 All secrets/configs are stored in Backend/.env.
 For testing, copy the provided example file:
@@ -81,15 +81,7 @@ cd Backend
 cp .env.example .env
 
 
-PLEASE NOTE: 
-⚡ Caldera Toggle (game.html)
-
-// Line 206
-const DEV_BYPASS = true;   // Run without Caldera
-const DEV_BYPASS = false;  // Run with Caldera
-
-
-Database
+# Database
 
 Current: SQLite (Backend/test.db)
 
@@ -100,7 +92,7 @@ Reset local DB:
 rm -f Backend/test.db
 flask db upgrade
 
-🤖 Caldera Integration
+# 🤖 Caldera Integration
 
 Runs in a Python 3.11 environment:
 
@@ -110,12 +102,8 @@ source env311/bin/activate
 
 python server.py --insecure --build
 
-
+# CURRENT STATUS 
 AI Question Generation
-
-Currently uses Google Gemini API
-
-❌ Status: broken (API version mismatch, 404)
 
 🛠️ Fix in progress — Q/A generation may not work until API update is complete
 
