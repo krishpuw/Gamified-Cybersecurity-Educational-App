@@ -72,6 +72,13 @@ flask db upgrade
 python app.py
 App runs at 👉 http://127.0.0.1:5000
 
+🔑 Environment Variables
+
+All secrets/configs are stored in Backend/.env.
+For testing, copy the provided example file:
+
+cd Backend
+cp .env.example .env
 
 
 PLEASE NOTE: 
